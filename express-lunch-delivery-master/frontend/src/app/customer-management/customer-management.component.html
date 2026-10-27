@@ -1,0 +1,231 @@
+<!-- คอนเทนเนอร์หลักของหน้าจัดการข้อมูลลูกค้า -->
+<section class="page-content">
+  <!-- หัวข้อประจำหน้า (Header) -->
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">CUSTOMER DIRECTORY</p>
+      <h1>จัดการข้อมูลลูกค้า</h1>
+      <p class="subtitle">จัดเก็บที่อยู่และพิกัดจำลองสำหรับวางแผนการจัดส่ง</p>
+    </div>
+  </header>
+
+  <!-- แสดงข้อความแจ้งเตือนเมื่อทำรายการสำเร็จ (Angular Control Flow: @if) -->
+  @if (successMessage(); as message) {
+    <p class="notice success" role="status">{{ message }}</p>
+  }
+  <!-- แสดงข้อความแจ้งเตือนเมื่อเกิดข้อผิดพลาด -->
+  @if (errorMessage(); as error) {
+    <p class="notice error" role="alert">{{ error }}</p>
+  }
+
+  <!-- การ์ดฟอร์มสำหรับเพิ่ม / แก้ไขข้อมูลลูกค้า -->
+  <section class="form-card">
+    <div class="section-heading">
+      <!-- เปลี่ยนหัวข้อตามสถานะว่ากำลัง "เพิ่ม" (editingId === null) หรือ "แก้ไข" -->
+      <h2>{{ editingId === null ? 'เพิ่มลูกค้า' : 'แก้ไขข้อมูลลูกค้า' }}</h2>
+      <span>พิกัดใช้จำลองตำแหน่งบนแผนที่</span>
+    </div>
+
+    <!-- ฟอร์มรับข้อมูล ผูกอีเวนต์ submit เข้ากับฟังก์ชัน saveCustomer() -->
+    <form (ngSubmit)="saveCustomer()">
+      <div class="form-grid">
+        <!-- ช่องกรอกชื่อลูกค้า (ผูกข้อมูล Two-way binding ด้วย [(ngModel)]) -->
+        <label>
+          ชื่อลูกค้า
+          <input name="name" [(ngModel)]="draft.name" required maxlength="100" />
+        </label>
+        <!-- ช่องกรอกเบอร์โทร -->
+        <label>
+          เบอร์โทร
+          <input name="phone" [(ngModel)]="draft.phone" required maxlength="20" />
+        </label>
+        <!-- ช่องกรอกที่อยู่จัดส่ง (แบบเต็มความกว้าง wide) -->
+        <label class="wide">
+          ที่อยู่จัดส่ง
+          <input name="address" [(ngModel)]="draft.address" required maxlength="255" />
+        </label>
+        <!-- ช่องกรอกละติจูด (จำกัดช่วง -90 ถึง 90) -->
+        <label>
+          ละติจูด
+          <input name="latitude" type="number" step="0.000001" min="-90" max="90" [(ngModel)]="draft.latitude" required />
+        </label>
+        <!-- ช่องกรอกลองจิจูด (จำกัดช่วง -180 ถึง 180) -->
+        <label>
+          ลองจิจูด
+          <input name="longitude" type="number" step="0.000001" min="-180" max="180" [(ngModel)]="draft.longitude" required />
+        </label>
+      </div>
+
+      <!-- ปุ่มดำเนินการหลักและปุ่มยกเลิก -->
+      <div class="form-actions">
+        <!-- ปุ่มบันทึก (ล็อกปุ่ม [disabled] ไว้ขณะกำลังบันทึก isSaving) -->
+        <button class="primary-button" type="submit" [disabled]="isSaving">
+          {{ isSaving ? 'กำลังบันทึก...' : editingId === null ? 'เพิ่มลูกค้า' : 'บันทึกการแก้ไข' }}
+        </button>
+        <!-- แสดงปุ่มยกเลิก เฉพาะตอนที่อยู่ในโหมดแก้ไขข้อมูล -->
+        @if (editingId !== null) {
+          <button class="secondary-button" type="button" (click)="cancelEdit()">ยกเลิก</button>
+        }
+      </div>
+    </form>
+  </section>
+
+  <!-- การ์ดตารางแสดงรายชื่อลูกค้าทั้งหมด -->
+  <section class="table-card">
+    <div class="section-heading">
+      <h2>รายชื่อลูกค้า</h2>
+      <!-- นับจำนวนลูกค้ารวมจาก Signal customers() -->
+      <span>{{ customers().length }} รายการ</span>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">ชื่อ / เบอร์โทร</th>
+            <th scope="col">ที่อยู่</th>
+            <th scope="col">พิกัด / แผนที่</th>
+            <th scope="col">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- วนลูปแสดงรายการลูกค้าด้วย @for พร้อมติดตามคีย์ด้วย customer.id -->
+          @for (customer of customers(); track customer.id) {
+            <tr>
+              <td><strong>{{ customer.name }}</strong><span class="secondary-text">{{ customer.phone }}</span></td>
+              <td>{{ customer.address }}</td>
+              <td>
+                <span class="secondary-text">{{ customer.latitude }}, {{ customer.longitude }}</span>
+                <!-- ลิงก์เปิดพิกัดไปยัง Google Maps -->
+                <a [href]="mapUrl(customer)" target="_blank" rel="noopener noreferrer">เปิดพิกัดในแผนที่</a>
+              </td>
+              <!-- ปุ่มแก้ไขและลบข้อมูลลูกค้า -->
+              <td class="actions">
+                <button class="text-button" type="button" (click)="editCustomer(customer)">แก้ไข</button>
+                <button class="text-button danger-text" type="button" (click)="deleteCustomer(customer)">ลบ</button>
+              </td>
+            </tr>
+          } @empty {
+            <!-- กรณีไม่มีข้อมูลลูกค้าในอาร์เรย์เลย -->
+            <tr><td colspan="4" class="empty-row">ยังไม่มีข้อมูลลูกค้า</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section><!-- คอนเทนเนอร์หลักของหน้าจัดการข้อมูลลูกค้า -->
+<section class="page-content">
+  <!-- หัวข้อประจำหน้า (Header) -->
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">CUSTOMER DIRECTORY</p>
+      <h1>จัดการข้อมูลลูกค้า</h1>
+      <p class="subtitle">จัดเก็บที่อยู่และพิกัดจำลองสำหรับวางแผนการจัดส่ง</p>
+    </div>
+  </header>
+
+  <!-- แสดงข้อความแจ้งเตือนเมื่อทำรายการสำเร็จ (Angular Control Flow: @if) -->
+  @if (successMessage(); as message) {
+    <p class="notice success" role="status">{{ message }}</p>
+  }
+  <!-- แสดงข้อความแจ้งเตือนเมื่อเกิดข้อผิดพลาด -->
+  @if (errorMessage(); as error) {
+    <p class="notice error" role="alert">{{ error }}</p>
+  }
+
+  <!-- การ์ดฟอร์มสำหรับเพิ่ม / แก้ไขข้อมูลลูกค้า -->
+  <section class="form-card">
+    <div class="section-heading">
+      <!-- เปลี่ยนหัวข้อตามสถานะว่ากำลัง "เพิ่ม" (editingId === null) หรือ "แก้ไข" -->
+      <h2>{{ editingId === null ? 'เพิ่มลูกค้า' : 'แก้ไขข้อมูลลูกค้า' }}</h2>
+      <span>พิกัดใช้จำลองตำแหน่งบนแผนที่</span>
+    </div>
+
+    <!-- ฟอร์มรับข้อมูล ผูกอีเวนต์ submit เข้ากับฟังก์ชัน saveCustomer() -->
+    <form (ngSubmit)="saveCustomer()">
+      <div class="form-grid">
+        <!-- ช่องกรอกชื่อลูกค้า (ผูกข้อมูล Two-way binding ด้วย [(ngModel)]) -->
+        <label>
+          ชื่อลูกค้า
+          <input name="name" [(ngModel)]="draft.name" required maxlength="100" />
+        </label>
+        <!-- ช่องกรอกเบอร์โทร -->
+        <label>
+          เบอร์โทร
+          <input name="phone" [(ngModel)]="draft.phone" required maxlength="20" />
+        </label>
+        <!-- ช่องกรอกที่อยู่จัดส่ง (แบบเต็มความกว้าง wide) -->
+        <label class="wide">
+          ที่อยู่จัดส่ง
+          <input name="address" [(ngModel)]="draft.address" required maxlength="255" />
+        </label>
+        <!-- ช่องกรอกละติจูด (จำกัดช่วง -90 ถึง 90) -->
+        <label>
+          ละติจูด
+          <input name="latitude" type="number" step="0.000001" min="-90" max="90" [(ngModel)]="draft.latitude" required />
+        </label>
+        <!-- ช่องกรอกลองจิจูด (จำกัดช่วง -180 ถึง 180) -->
+        <label>
+          ลองจิจูด
+          <input name="longitude" type="number" step="0.000001" min="-180" max="180" [(ngModel)]="draft.longitude" required />
+        </label>
+      </div>
+
+      <!-- ปุ่มดำเนินการหลักและปุ่มยกเลิก -->
+      <div class="form-actions">
+        <!-- ปุ่มบันทึก (ล็อกปุ่ม [disabled] ไว้ขณะกำลังบันทึก isSaving) -->
+        <button class="primary-button" type="submit" [disabled]="isSaving">
+          {{ isSaving ? 'กำลังบันทึก...' : editingId === null ? 'เพิ่มลูกค้า' : 'บันทึกการแก้ไข' }}
+        </button>
+        <!-- แสดงปุ่มยกเลิก เฉพาะตอนที่อยู่ในโหมดแก้ไขข้อมูล -->
+        @if (editingId !== null) {
+          <button class="secondary-button" type="button" (click)="cancelEdit()">ยกเลิก</button>
+        }
+      </div>
+    </form>
+  </section>
+
+  <!-- การ์ดตารางแสดงรายชื่อลูกค้าทั้งหมด -->
+  <section class="table-card">
+    <div class="section-heading">
+      <h2>รายชื่อลูกค้า</h2>
+      <!-- นับจำนวนลูกค้ารวมจาก Signal customers() -->
+      <span>{{ customers().length }} รายการ</span>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">ชื่อ / เบอร์โทร</th>
+            <th scope="col">ที่อยู่</th>
+            <th scope="col">พิกัด / แผนที่</th>
+            <th scope="col">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- วนลูปแสดงรายการลูกค้าด้วย @for พร้อมติดตามคีย์ด้วย customer.id -->
+          @for (customer of customers(); track customer.id) {
+            <tr>
+              <td><strong>{{ customer.name }}</strong><span class="secondary-text">{{ customer.phone }}</span></td>
+              <td>{{ customer.address }}</td>
+              <td>
+                <span class="secondary-text">{{ customer.latitude }}, {{ customer.longitude }}</span>
+                <!-- ลิงก์เปิดพิกัดไปยัง Google Maps -->
+                <a [href]="mapUrl(customer)" target="_blank" rel="noopener noreferrer">เปิดพิกัดในแผนที่</a>
+              </td>
+              <!-- ปุ่มแก้ไขและลบข้อมูลลูกค้า -->
+              <td class="actions">
+                <button class="text-button" type="button" (click)="editCustomer(customer)">แก้ไข</button>
+                <button class="text-button danger-text" type="button" (click)="deleteCustomer(customer)">ลบ</button>
+              </td>
+            </tr>
+          } @empty {
+            <!-- กรณีไม่มีข้อมูลลูกค้าในอาร์เรย์เลย -->
+            <tr><td colspan="4" class="empty-row">ยังไม่มีข้อมูลลูกค้า</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>

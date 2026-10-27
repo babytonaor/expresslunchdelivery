@@ -1,0 +1,34 @@
+<!-- ส่วนหัวของเว็บไซต์ (Navigation Bar / Topbar) สำหรับสลับหน้าการทำงานหลัก -->
+<header class="topbar">
+  <!-- โลโก้/ชื่อแบรนด์ระบบ พร้อมลิงก์กลับไปที่หน้า Owner Dashboard -->
+  <a class="brand" routerLink="/owner-dashboard" aria-label="ไปหน้าแดชบอร์ด">
+    <span class="brand-mark" aria-hidden="true">R</span>
+    <span>Rider Route</span>
+  </a>
+
+  <!-- แถบเมนูนำทางหลัก (Navigation Links) -->
+  <nav class="main-nav" aria-label="เมนูหลัก">
+    <!-- ลิงก์ไปหน้าจัดการออเดอร์ ( Owner Workspace ) -->
+    <a routerLink="/owner-dashboard" routerLinkActive="active" ariaCurrentWhenActive="page">
+      จัดการออเดอร์
+    </a>
+    <!-- ลิงก์ไปหน้าจัดการข้อมูลลูกค้า ( Customer Directory ) -->
+    <a routerLink="/customers" routerLinkActive="active" ariaCurrentWhenActive="page">
+      ลูกค้า
+    </a>
+    <!-- ลิงก์ไปหน้าคำนวณและวางแผนเส้นทางจัดส่ง ( Delivery Route Planner ) -->
+    <a routerLink="/route-planning" routerLinkActive="active" ariaCurrentWhenActive="page">
+      วางแผนเส้นทาง
+    </a>
+    <!-- ลิงก์ไปหน้าค้นหาใบงานสำหรับไรเดอร์ ( Rider Workspace ) -->
+    <a routerLink="/rider-tasks" routerLinkActive="active" ariaCurrentWhenActive="page">
+      คิวงานไรเดอร์
+    </a>
+  </nav>
+</header>
+
+<!-- ส่วนแสดงผลเนื้อหาหลักของแต่ละหน้าตามที่ Angular Router กำหนด (Layout Shell) -->
+<main class="page-shell">
+  <!-- จุดแสดงผล Component ตาม Path ใน routing (เช่น CustomerManagement, OwnerDashboard, RoutePlanning, RiderTasks) -->
+  <router-outlet />
+</main>
